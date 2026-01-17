@@ -1,0 +1,8 @@
+{
+  "name": "dubblelab-film-game",
+  "version": "1.0.0",
+  "description": "Film sorting arcade game for dubblelab",
+  "scripts": {
+    "start": "npx serve . -l 3000"
+  }
+}
