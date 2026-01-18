@@ -377,7 +377,8 @@
             50% { transform: rotate(90deg) scale(1.2); }
         }
         
-        @media screen and (orientation: landscape) and (max-width: 900px) {
+        /* Portrait-only lock - only on mobile/tablet devices */
+        @media screen and (orientation: landscape) and (max-width: 768px) {
             #rotate-warning {
                 display: flex !important;
             }
@@ -644,7 +645,8 @@
                 <div id="final-score">0</div>
                 <div id="name-entry" class="hidden" style="margin: 20px 0;">
                     <p style="color: #FFE500; font-size: 18px; margin-bottom: 10px;">🎉 High Score! Enter your name:</p>
-                    <input type="text" id="player-name" maxlength="20" placeholder="Your Name" style="padding: 10px; font-size: 16px; border-radius: 10px; border: 3px solid #FFE500; background: #fff; font-family: 'Nunito', sans-serif; font-weight: 700; width: 200px; text-align: center;">
+                    <input type="text" id="player-name" maxlength="15" placeholder="Your Name" style="padding: 10px; font-size: 16px; border-radius: 10px; border: 3px solid #FFE500; background: #fff; font-family: 'Nunito', sans-serif; font-weight: 700; width: 200px; text-align: center;">
+                    <div id="name-error" style="color: #FF6B9D; font-size: 14px; margin-top: 5px; display: none;">❌ Please choose a different name</div>
                     <button id="submit-score" style="margin-top: 15px;">Submit Score</button>
                 </div>
                 <p>Great sorting!</p>
@@ -1220,13 +1222,17 @@
         // Leaderboard and Stats Functions
         async function incrementPlayCount() {
             try {
-                // Increment the play count in Supabase
-                const result = await supabaseQuery('stats?id=eq.play-count', {
+                // Get current count
+                const current = await supabaseQuery('stats?id=eq.play-count');
+                const currentValue = current[0]?.value || 0;
+                const newValue = parseInt(currentValue) + 1;
+                
+                // Update with new count
+                await supabaseQuery('stats?id=eq.play-count', {
                     method: 'PATCH',
-                    body: JSON.stringify({ value: 1 }),
-                    headers: { 'Prefer': 'return=representation' }
+                    body: JSON.stringify({ value: newValue })
                 });
-                return result[0]?.value || null;
+                return newValue;
             } catch (e) {
                 console.log('Play count increment failed:', e);
                 return null;
@@ -1286,6 +1292,43 @@
             html += '</div>';
             
             listEl.innerHTML = html;
+        }
+
+        function isNameAppropriate(name) {
+            // Basic profanity filter - checks for common offensive words
+            const blacklist = [
+                'fuck', 'shit', 'bitch', 'damn', 'ass', 'crap', 'piss',
+                'dick', 'cock', 'pussy', 'cunt', 'fag', 'retard',
+                'nigger', 'nigga', 'nazi', 'hitler',
+                'porn', 'sex', 'xxx', 'rape', 'kill'
+            ];
+            
+            const lowerName = name.toLowerCase().replace(/[^a-z0-9]/g, ''); // Remove spaces/special chars
+            
+            // Check if name contains any blacklisted word
+            for (let word of blacklist) {
+                if (lowerName.includes(word)) {
+                    return false;
+                }
+            }
+            
+            // Also check for leetspeak common variants (optional but helpful)
+            const leetReplacements = lowerName
+                .replace(/0/g, 'o')
+                .replace(/1/g, 'i')
+                .replace(/3/g, 'e')
+                .replace(/4/g, 'a')
+                .replace(/5/g, 's')
+                .replace(/7/g, 't')
+                .replace(/8/g, 'b');
+                
+            for (let word of blacklist) {
+                if (leetReplacements.includes(word)) {
+                    return false;
+                }
+            }
+            
+            return true;
         }
 
         async function submitScore(playerName, playerScore) {
@@ -1786,6 +1829,16 @@
                     // Setup submit handler
                     const submitHandler = async () => {
                         const name = document.getElementById('player-name').value.trim() || 'Anonymous';
+                        const errorDiv = document.getElementById('name-error');
+                        
+                        // Validate name
+                        if (name !== 'Anonymous' && !isNameAppropriate(name)) {
+                            errorDiv.style.display = 'block';
+                            return; // Don't submit
+                        }
+                        
+                        // Hide error and submit
+                        errorDiv.style.display = 'none';
                         await submitScore(name, score);
                         document.getElementById('name-entry').classList.add('hidden');
                     };
@@ -1802,6 +1855,11 @@
                     nameInput.parentNode.replaceChild(newNameInput, nameInput);
                     newNameInput.addEventListener('keypress', (e) => {
                         if (e.key === 'Enter') submitHandler();
+                    });
+                    
+                    // Hide error when user starts typing
+                    newNameInput.addEventListener('input', () => {
+                        document.getElementById('name-error').style.display = 'none';
                     });
                 } else {
                     document.getElementById('name-entry').classList.add('hidden');
