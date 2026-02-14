@@ -2079,8 +2079,15 @@
             chemistryFillLevel = 0;
             chemistryTimeLeft = 6;
 
-            // Pause film spawning
+            // Pause film spawning and clear all films from screen
             clearInterval(spawnInterval);
+            films.forEach(f => {
+                if (f.element && f.element.parentNode) {
+                    f.element.remove();
+                }
+            });
+            films = [];
+            draggedFilm = null;
 
             // Pause music
             if (musicPlaying) {
