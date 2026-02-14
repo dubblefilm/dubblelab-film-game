@@ -517,44 +517,8 @@
         /* Chemistry Challenge Styles */
         .bin.out-of-chemistry {
             position: relative;
-        }
-        .bin.out-of-chemistry svg {
-            filter: saturate(0) brightness(4) contrast(8);
-        }
-        .chemistry-overlay {
-            position: absolute;
-            top: 30%;
-            left: 0;
-            right: 0;
-            bottom: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-            z-index: 3;
-        }
-        .chemistry-overlay.tappable {
-            pointer-events: auto;
             cursor: pointer;
         }
-        .chemistry-sad-face {
-            z-index: 4;
-            pointer-events: none;
-        }
-        .chemistry-fill-liquid {
-            position: absolute;
-            bottom: 0;
-            left: 5%;
-            right: 5%;
-            height: 0%;
-            transition: height 0.1s ease-out;
-            border-radius: 0 0 5px 5px;
-            z-index: 2;
-            opacity: 0.85;
-        }
-        .chemistry-fill-liquid.type-C41 { background: linear-gradient(to top, #C41E7F, #E84BA5); }
-        .chemistry-fill-liquid.type-BW { background: linear-gradient(to top, #333, #666); }
-        .chemistry-fill-liquid.type-E6ECN { background: linear-gradient(to top, #2a6db5, #5a9fd4); }
 
         .chemistry-prompt {
             position: absolute;
@@ -653,10 +617,6 @@
         }
 
         @media screen and (max-height: 700px) {
-            .chemistry-sad-face svg {
-                width: 36px;
-                height: 36px;
-            }
             .chemistry-prompt {
                 font-size: 17px;
                 padding: 10px 16px;
@@ -669,10 +629,6 @@
             }
         }
         @media screen and (max-height: 600px) {
-            .chemistry-sad-face svg {
-                width: 30px;
-                height: 30px;
-            }
             .chemistry-prompt {
                 font-size: 15px;
                 padding: 8px 14px;
@@ -1661,6 +1617,12 @@
         let chemistryReadTimeout = null;
         const chemistryLevels = [3, 5, 7, 9];
         const binTypeNames = { 'C41': 'COLOR C41', 'BW': 'B&W', 'E6ECN': 'E6 & ECN' };
+        const binBodyAreas = {
+            'C41':   { x: 10, y: 35, w: 100, h: 60, rx: 4, clip: '<rect x="10" y="35" width="100" height="60" rx="4"/>' },
+            'BW':    { x: 10, y: 20, w: 80,  h: 55, rx: 0, clip: '<path d="M10 25 L50 20 L90 25 L90 75 L10 75 Z"/>' },
+            'E6ECN': { x: 10, y: 45, w: 100, h: 50, rx: 4, clip: '<rect x="10" y="45" width="100" height="50" rx="4"/>' }
+        };
+        const liquidColors = { 'C41': '#C41E7F', 'BW': '#555', 'E6ECN': '#2a6db5' };
 
         const levels = [
             { name: 'Solo Revelado', speed: 1.2, spawn: 3000, films: 5 },
@@ -2099,29 +2061,58 @@
                 originalBinContents[targetType] = bin.innerHTML;
             }
 
-            // Apply white-out filter to SVG (keeps outline, fills white)
             bin.classList.add('out-of-chemistry');
 
-            // Add overlay with sad face and fill liquid
-            const overlay = document.createElement('div');
-            overlay.className = 'chemistry-overlay';
-            overlay.id = 'chemistry-overlay';
-            overlay.innerHTML = `
-                <div class="chemistry-sad-face">
-                    <svg width="44" height="44" viewBox="0 0 44 44">
-                        <circle cx="22" cy="22" r="20" fill="none" stroke="#000" stroke-width="2.5"/>
-                        <circle cx="15" cy="17" r="3" fill="#000"/>
-                        <circle cx="29" cy="17" r="3" fill="#000"/>
-                        <path d="M13 32 Q22 24 31 32" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
-                    </svg>
-                </div>
+            // Inject SVG elements directly into processor SVG
+            const svg = bin.querySelector('svg');
+            const ns = 'http://www.w3.org/2000/svg';
+            const area = binBodyAreas[targetType];
+            const bottom = area.y + area.h;
+            const cx = area.x + area.w / 2;
+            const cy = area.y + area.h / 2;
+
+            // ClipPath so liquid stays inside processor body
+            const defs = document.createElementNS(ns, 'defs');
+            defs.id = 'chem-defs';
+            const clipPath = document.createElementNS(ns, 'clipPath');
+            clipPath.id = 'chem-clip';
+            clipPath.innerHTML = area.clip;
+            defs.appendChild(clipPath);
+            svg.appendChild(defs);
+
+            // White background inside processor body
+            const whiteBg = document.createElementNS(ns, 'rect');
+            whiteBg.id = 'chem-white';
+            whiteBg.setAttribute('x', area.x);
+            whiteBg.setAttribute('y', area.y);
+            whiteBg.setAttribute('width', area.w);
+            whiteBg.setAttribute('height', area.h);
+            whiteBg.setAttribute('fill', 'white');
+            whiteBg.setAttribute('clip-path', 'url(#chem-clip)');
+            svg.appendChild(whiteBg);
+
+            // Colored liquid that fills from bottom (starts at 0)
+            const liquid = document.createElementNS(ns, 'rect');
+            liquid.id = 'chem-liquid';
+            liquid.setAttribute('x', area.x);
+            liquid.setAttribute('y', bottom);
+            liquid.setAttribute('width', area.w);
+            liquid.setAttribute('height', 0);
+            liquid.setAttribute('fill', liquidColors[targetType]);
+            liquid.setAttribute('opacity', '0.85');
+            liquid.setAttribute('clip-path', 'url(#chem-clip)');
+            svg.appendChild(liquid);
+
+            // Sad face drawn inside the processor
+            const face = document.createElementNS(ns, 'g');
+            face.id = 'chem-face';
+            face.innerHTML = `
+                <circle cx="${cx}" cy="${cy}" r="13" fill="none" stroke="#000" stroke-width="2"/>
+                <circle cx="${cx - 5}" cy="${cy - 3}" r="2" fill="#000"/>
+                <circle cx="${cx + 5}" cy="${cy - 3}" r="2" fill="#000"/>
+                <path id="chem-mouth" d="M${cx - 6} ${cy + 5} Q${cx} ${cy + 1} ${cx + 6} ${cy + 5}" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round"/>
             `;
-            // Add fill liquid to the bin itself (behind overlay)
-            const liquid = document.createElement('div');
-            liquid.className = 'chemistry-fill-liquid type-' + targetType;
-            liquid.id = 'chemistry-liquid';
-            bin.appendChild(liquid);
-            bin.appendChild(overlay);
+            svg.appendChild(face);
 
             // Show prompt
             const gameArea = document.getElementById('game-area');
@@ -2162,14 +2153,7 @@
             timerEl.textContent = '6';
             gameArea.appendChild(timerEl);
 
-            // Make overlay tappable
-            const overlay = document.getElementById('chemistry-overlay');
-            if (overlay) {
-                overlay.classList.add('tappable');
-                overlay.addEventListener('touchstart', onChemistryTap, { passive: false });
-                overlay.addEventListener('mousedown', onChemistryTap);
-            }
-            // Also allow tapping the bin itself
+            // Allow tapping the bin
             bin.addEventListener('touchstart', onChemistryTap, { passive: false });
             bin.addEventListener('mousedown', onChemistryTap);
 
@@ -2220,25 +2204,29 @@
 
         function updateChemistryFill() {
             if (!chemistryTargetBin) return;
-            const liquid = document.getElementById('chemistry-liquid');
+            const targetType = chemistryTargetBin.dataset.type;
+            const area = binBodyAreas[targetType];
+            const bottom = area.y + area.h;
+
+            // Update SVG liquid rect
+            const liquid = document.getElementById('chem-liquid');
             if (liquid) {
-                liquid.style.height = chemistryFillLevel + '%';
+                const fillHeight = area.h * (chemistryFillLevel / 100);
+                liquid.setAttribute('y', bottom - fillHeight);
+                liquid.setAttribute('height', fillHeight);
             }
-            // Update illustrated face based on fill level
-            const face = chemistryTargetBin.querySelector('.chemistry-sad-face svg');
-            if (face) {
-                const mouth = face.querySelector('path');
-                if (mouth) {
-                    if (chemistryFillLevel > 70) {
-                        // Happy face - smile
-                        mouth.setAttribute('d', 'M13 28 Q22 36 31 28');
-                    } else if (chemistryFillLevel > 40) {
-                        // Neutral face - straight line
-                        mouth.setAttribute('d', 'M14 30 L30 30');
-                    } else {
-                        // Sad face - frown
-                        mouth.setAttribute('d', 'M13 32 Q22 24 31 32');
-                    }
+
+            // Update mouth expression
+            const mouth = document.getElementById('chem-mouth');
+            if (mouth) {
+                const cx = area.x + area.w / 2;
+                const cy = area.y + area.h / 2;
+                if (chemistryFillLevel > 70) {
+                    mouth.setAttribute('d', `M${cx - 6} ${cy + 3} Q${cx} ${cy + 7} ${cx + 6} ${cy + 3}`);
+                } else if (chemistryFillLevel > 40) {
+                    mouth.setAttribute('d', `M${cx - 6} ${cy + 5} L${cx + 6} ${cy + 5}`);
+                } else {
+                    mouth.setAttribute('d', `M${cx - 6} ${cy + 5} Q${cx} ${cy + 1} ${cx + 6} ${cy + 5}`);
                 }
             }
         }
@@ -2254,6 +2242,14 @@
             chemistryDrainInterval = null;
             chemistryWarningInterval = null;
             chemistryTickInterval = null;
+        }
+
+        function removeChemistrySvgElements() {
+            const ids = ['chem-defs', 'chem-white', 'chem-liquid', 'chem-face'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.remove();
+            });
         }
 
         function chemistrySuccess() {
@@ -2295,17 +2291,10 @@
 
             // Restore bin after a short delay for the spark to show
             setTimeout(() => {
-                // Remove overlay and liquid
-                const overlay = document.getElementById('chemistry-overlay');
-                const liquid = document.getElementById('chemistry-liquid');
-                if (overlay) overlay.remove();
-                if (liquid) liquid.remove();
-                // Remove tap listeners from bin
+                removeChemistrySvgElements();
                 chemistryTargetBin.removeEventListener('touchstart', onChemistryTap);
                 chemistryTargetBin.removeEventListener('mousedown', onChemistryTap);
-                // Remove white-out filter
                 chemistryTargetBin.classList.remove('out-of-chemistry');
-
                 chemistryTargetBin = null;
 
                 // Resume game
@@ -2331,12 +2320,7 @@
             if (promptEl) promptEl.remove();
             if (timerEl) timerEl.remove();
 
-            // Remove overlay and liquid
-            const overlay = document.getElementById('chemistry-overlay');
-            const liquid = document.getElementById('chemistry-liquid');
-            if (overlay) overlay.remove();
-            if (liquid) liquid.remove();
-            // Remove tap listeners from bin
+            removeChemistrySvgElements();
             chemistryTargetBin.removeEventListener('touchstart', onChemistryTap);
             chemistryTargetBin.removeEventListener('mousedown', onChemistryTap);
 
@@ -2453,13 +2437,9 @@
             // Clean up any leftover chemistry UI
             const chemPrompt = document.getElementById('chemistry-prompt');
             const chemTimer = document.getElementById('chemistry-timer');
-            const chemOverlay = document.getElementById('chemistry-overlay');
-            const chemLiquid = document.getElementById('chemistry-liquid');
             if (chemPrompt) chemPrompt.remove();
             if (chemTimer) chemTimer.remove();
-            if (chemOverlay) chemOverlay.remove();
-            if (chemLiquid) chemLiquid.remove();
-            // Remove out-of-chemistry class from all bins
+            removeChemistrySvgElements();
             document.querySelectorAll('.bin.out-of-chemistry').forEach(b => b.classList.remove('out-of-chemistry'));
 
             // Reset hearts
@@ -2505,6 +2485,7 @@
             // Clean up chemistry challenge if active
             chemistryActive = false;
             clearChemistryIntervals();
+            removeChemistrySvgElements();
             const chemPrompt = document.getElementById('chemistry-prompt');
             const chemTimer = document.getElementById('chemistry-timer');
             if (chemPrompt) chemPrompt.remove();
