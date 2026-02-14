@@ -519,34 +519,38 @@
             position: relative;
         }
         .bin.out-of-chemistry svg {
-            display: none;
+            filter: saturate(0) brightness(4) contrast(8);
         }
-        .chemistry-empty-tank {
-            width: 90%;
-            height: 126px;
-            border: 3px solid #000;
-            border-radius: 10px;
-            background: #fff;
-            position: relative;
-            overflow: hidden;
+        .chemistry-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 5px;
+            pointer-events: none;
+            z-index: 3;
+        }
+        .chemistry-overlay.tappable {
+            pointer-events: auto;
+            cursor: pointer;
         }
         .chemistry-sad-face {
-            font-size: 40px;
-            z-index: 2;
+            z-index: 4;
             pointer-events: none;
         }
         .chemistry-fill-liquid {
             position: absolute;
             bottom: 0;
-            left: 0;
-            right: 0;
+            left: 5%;
+            right: 5%;
             height: 0%;
             transition: height 0.1s ease-out;
-            border-radius: 0 0 7px 7px;
+            border-radius: 0 0 5px 5px;
+            z-index: 2;
+            opacity: 0.85;
         }
         .chemistry-fill-liquid.type-C41 { background: linear-gradient(to top, #C41E7F, #E84BA5); }
         .chemistry-fill-liquid.type-BW { background: linear-gradient(to top, #333, #666); }
@@ -649,11 +653,9 @@
         }
 
         @media screen and (max-height: 700px) {
-            .chemistry-empty-tank {
-                height: 105px;
-            }
-            .chemistry-sad-face {
-                font-size: 32px;
+            .chemistry-sad-face svg {
+                width: 36px;
+                height: 36px;
             }
             .chemistry-prompt {
                 font-size: 14px;
@@ -667,11 +669,9 @@
             }
         }
         @media screen and (max-height: 600px) {
-            .chemistry-empty-tank {
-                height: 90px;
-            }
-            .chemistry-sad-face {
-                font-size: 28px;
+            .chemistry-sad-face svg {
+                width: 30px;
+                height: 30px;
             }
             .chemistry-prompt {
                 font-size: 13px;
@@ -1657,6 +1657,8 @@
         let chemistryTickInterval = null;
         let outOfServiceBins = [];
         let originalBinContents = {};
+        let chemistryFirstTime = true;
+        let chemistryReadTimeout = null;
         const chemistryLevels = [3, 5, 7, 9];
         const binTypeNames = { 'C41': 'COLOR C41', 'BW': 'B&W', 'E6ECN': 'E6 & ECN' };
 
@@ -2085,30 +2087,66 @@
                 stopMusic();
             }
 
-            // Save original bin HTML
-            originalBinContents[targetType] = bin.innerHTML;
+            // Save original bin HTML if not already saved
+            if (!originalBinContents[targetType]) {
+                originalBinContents[targetType] = bin.innerHTML;
+            }
 
-            // Replace bin with empty white tank + sad face
+            // Apply white-out filter to SVG (keeps outline, fills white)
             bin.classList.add('out-of-chemistry');
-            const tank = document.createElement('div');
-            tank.className = 'chemistry-empty-tank';
-            tank.innerHTML = `
-                <div class="chemistry-sad-face">😢</div>
-                <div class="chemistry-fill-liquid type-${targetType}"></div>
+
+            // Add overlay with sad face and fill liquid
+            const overlay = document.createElement('div');
+            overlay.className = 'chemistry-overlay';
+            overlay.id = 'chemistry-overlay';
+            overlay.innerHTML = `
+                <div class="chemistry-sad-face">
+                    <svg width="44" height="44" viewBox="0 0 44 44">
+                        <circle cx="22" cy="22" r="20" fill="none" stroke="#000" stroke-width="2.5"/>
+                        <circle cx="15" cy="17" r="3" fill="#000"/>
+                        <circle cx="29" cy="17" r="3" fill="#000"/>
+                        <path d="M13 32 Q22 24 31 32" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
             `;
-            // Insert tank before the label
-            const label = bin.querySelector('.bin-label');
-            const svg = bin.querySelector('svg');
-            if (svg) svg.style.display = 'none';
-            bin.insertBefore(tank, label);
+            // Add fill liquid to the bin itself (behind overlay)
+            const liquid = document.createElement('div');
+            liquid.className = 'chemistry-fill-liquid type-' + targetType;
+            liquid.id = 'chemistry-liquid';
+            bin.appendChild(liquid);
+            bin.appendChild(overlay);
 
             // Show prompt
             const gameArea = document.getElementById('game-area');
             const prompt = document.createElement('div');
             prompt.className = 'chemistry-prompt';
             prompt.id = 'chemistry-prompt';
-            prompt.innerHTML = `<span class="chem-type">${binTypeNames[targetType]}</span> processor needs chemistry!<br>Tap fast to fill it up!!`;
-            gameArea.appendChild(prompt);
+
+            // Start warning sound
+            playChemistryWarning();
+            chemistryWarningInterval = setInterval(() => {
+                if (chemistryActive) playChemistryWarning();
+            }, 800);
+
+            if (chemistryFirstTime) {
+                // First time: show explanation, wait 3 seconds, then start countdown
+                prompt.innerHTML = `<span class="chem-type">${binTypeNames[targetType]}</span> processor needs chemistry!<br>Tap fast to fill it up!!`;
+                gameArea.appendChild(prompt);
+
+                chemistryReadTimeout = setTimeout(() => {
+                    if (!chemistryActive) return;
+                    prompt.remove();
+                    chemistryFirstTime = false;
+                    beginChemistryCountdown(targetType, bin);
+                }, 3000);
+            } else {
+                // Subsequent times: go straight to countdown
+                beginChemistryCountdown(targetType, bin);
+            }
+        }
+
+        function beginChemistryCountdown(targetType, bin) {
+            const gameArea = document.getElementById('game-area');
 
             // Show timer
             const timerEl = document.createElement('div');
@@ -2117,11 +2155,16 @@
             timerEl.textContent = '5';
             gameArea.appendChild(timerEl);
 
-            // Start warning sound
-            playChemistryWarning();
-            chemistryWarningInterval = setInterval(() => {
-                if (chemistryActive) playChemistryWarning();
-            }, 800);
+            // Make overlay tappable
+            const overlay = document.getElementById('chemistry-overlay');
+            if (overlay) {
+                overlay.classList.add('tappable');
+                overlay.addEventListener('touchstart', onChemistryTap, { passive: false });
+                overlay.addEventListener('mousedown', onChemistryTap);
+            }
+            // Also allow tapping the bin itself
+            bin.addEventListener('touchstart', onChemistryTap, { passive: false });
+            bin.addEventListener('mousedown', onChemistryTap);
 
             // Start tick-tock countdown
             let tickHigh = true;
@@ -2152,10 +2195,6 @@
                 chemistryFillLevel = Math.max(0, chemistryFillLevel - 1.5);
                 updateChemistryFill();
             }, 100);
-
-            // Add tap listener to the tank
-            tank.addEventListener('touchstart', onChemistryTap, { passive: false });
-            tank.addEventListener('mousedown', onChemistryTap);
         }
 
         function onChemistryTap(e) {
@@ -2174,24 +2213,36 @@
 
         function updateChemistryFill() {
             if (!chemistryTargetBin) return;
-            const liquid = chemistryTargetBin.querySelector('.chemistry-fill-liquid');
+            const liquid = document.getElementById('chemistry-liquid');
             if (liquid) {
                 liquid.style.height = chemistryFillLevel + '%';
             }
-            // Update sad face based on fill
-            const face = chemistryTargetBin.querySelector('.chemistry-sad-face');
+            // Update illustrated face based on fill level
+            const face = chemistryTargetBin.querySelector('.chemistry-sad-face svg');
             if (face) {
-                if (chemistryFillLevel > 70) face.textContent = '😄';
-                else if (chemistryFillLevel > 40) face.textContent = '😐';
-                else face.textContent = '😢';
+                const mouth = face.querySelector('path');
+                if (mouth) {
+                    if (chemistryFillLevel > 70) {
+                        // Happy face - smile
+                        mouth.setAttribute('d', 'M13 28 Q22 36 31 28');
+                    } else if (chemistryFillLevel > 40) {
+                        // Neutral face - straight line
+                        mouth.setAttribute('d', 'M14 30 L30 30');
+                    } else {
+                        // Sad face - frown
+                        mouth.setAttribute('d', 'M13 32 Q22 24 31 32');
+                    }
+                }
             }
         }
 
         function clearChemistryIntervals() {
+            clearTimeout(chemistryReadTimeout);
             clearInterval(chemistryTimerInterval);
             clearInterval(chemistryDrainInterval);
             clearInterval(chemistryWarningInterval);
             clearInterval(chemistryTickInterval);
+            chemistryReadTimeout = null;
             chemistryTimerInterval = null;
             chemistryDrainInterval = null;
             chemistryWarningInterval = null;
@@ -2237,12 +2288,15 @@
 
             // Restore bin after a short delay for the spark to show
             setTimeout(() => {
-                // Remove the empty tank
-                const tank = chemistryTargetBin.querySelector('.chemistry-empty-tank');
-                if (tank) tank.remove();
-                // Show original SVG again
-                const svg = chemistryTargetBin.querySelector('svg');
-                if (svg) svg.style.display = '';
+                // Remove overlay and liquid
+                const overlay = document.getElementById('chemistry-overlay');
+                const liquid = document.getElementById('chemistry-liquid');
+                if (overlay) overlay.remove();
+                if (liquid) liquid.remove();
+                // Remove tap listeners from bin
+                chemistryTargetBin.removeEventListener('touchstart', onChemistryTap);
+                chemistryTargetBin.removeEventListener('mousedown', onChemistryTap);
+                // Remove white-out filter
                 chemistryTargetBin.classList.remove('out-of-chemistry');
 
                 chemistryTargetBin = null;
@@ -2270,12 +2324,14 @@
             if (promptEl) promptEl.remove();
             if (timerEl) timerEl.remove();
 
-            // Remove the empty tank
-            const tank = chemistryTargetBin.querySelector('.chemistry-empty-tank');
-            if (tank) tank.remove();
-            // Hide original SVG
-            const svg = chemistryTargetBin.querySelector('svg');
-            if (svg) svg.style.display = 'none';
+            // Remove overlay and liquid
+            const overlay = document.getElementById('chemistry-overlay');
+            const liquid = document.getElementById('chemistry-liquid');
+            if (overlay) overlay.remove();
+            if (liquid) liquid.remove();
+            // Remove tap listeners from bin
+            chemistryTargetBin.removeEventListener('touchstart', onChemistryTap);
+            chemistryTargetBin.removeEventListener('mousedown', onChemistryTap);
 
             // Add out of service sign
             chemistryTargetBin.classList.remove('out-of-chemistry');
@@ -2373,6 +2429,7 @@
             chemistryActive = false;
             chemistryTargetBin = null;
             chemistryFillLevel = 0;
+            chemistryFirstTime = true;
             clearChemistryIntervals();
             // Restore any out-of-service bins
             outOfServiceBins.forEach(type => {
@@ -2389,8 +2446,14 @@
             // Clean up any leftover chemistry UI
             const chemPrompt = document.getElementById('chemistry-prompt');
             const chemTimer = document.getElementById('chemistry-timer');
+            const chemOverlay = document.getElementById('chemistry-overlay');
+            const chemLiquid = document.getElementById('chemistry-liquid');
             if (chemPrompt) chemPrompt.remove();
             if (chemTimer) chemTimer.remove();
+            if (chemOverlay) chemOverlay.remove();
+            if (chemLiquid) chemLiquid.remove();
+            // Remove out-of-chemistry class from all bins
+            document.querySelectorAll('.bin.out-of-chemistry').forEach(b => b.classList.remove('out-of-chemistry'));
 
             // Reset hearts
             const hearts = document.querySelectorAll('#lives .heart');
