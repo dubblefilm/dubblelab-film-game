@@ -1650,7 +1650,7 @@
         let chemistryActive = false;
         let chemistryTargetBin = null;
         let chemistryFillLevel = 0;
-        let chemistryTimeLeft = 5;
+        let chemistryTimeLeft = 6;
         let chemistryTimerInterval = null;
         let chemistryDrainInterval = null;
         let chemistryWarningInterval = null;
@@ -2077,7 +2077,7 @@
             chemistryActive = true;
             chemistryTargetBin = bin;
             chemistryFillLevel = 0;
-            chemistryTimeLeft = 5;
+            chemistryTimeLeft = 6;
 
             // Pause film spawning
             clearInterval(spawnInterval);
@@ -2152,7 +2152,7 @@
             const timerEl = document.createElement('div');
             timerEl.className = 'chemistry-timer-display';
             timerEl.id = 'chemistry-timer';
-            timerEl.textContent = '5';
+            timerEl.textContent = '6';
             gameArea.appendChild(timerEl);
 
             // Make overlay tappable
@@ -2263,14 +2263,14 @@
             setTimeout(() => spark.remove(), 800);
 
             // Award 2000 points
-            score += 2000;
+            score += 5000;
             updateUI();
 
             // Show points popup
             const gameArea = document.getElementById('game-area');
             const popup = document.createElement('div');
             popup.className = 'points-popup';
-            popup.textContent = '⚡ CHEMISTRY FILLED! +2000!';
+            popup.textContent = '⚡ CHEMISTRY FILLED! +5000!';
             popup.style.fontSize = '20px';
             popup.style.color = '#FFE500';
             const binRect = chemistryTargetBin.getBoundingClientRect();
