@@ -1615,6 +1615,7 @@
         let originalBinContents = {};
         let chemistryFirstTime = true;
         let chemistryReadTimeout = null;
+        let chemistryFillCount = 0;
         const chemistryLevels = [3, 5, 7, 9];
         const binTypeNames = { 'C41': 'COLOR C41', 'BW': 'B&W', 'E6ECN': 'E6 & ECN' };
         const binBodyAreas = {
@@ -2265,15 +2266,17 @@
             chemistryTargetBin.appendChild(spark);
             setTimeout(() => spark.remove(), 800);
 
-            // Award 2000 points
-            score += 5000;
+            // Award escalating points: 5000, 10000, 15000
+            chemistryFillCount++;
+            const chemPoints = chemistryFillCount * 5000;
+            score += chemPoints;
             updateUI();
 
             // Show points popup
             const gameArea = document.getElementById('game-area');
             const popup = document.createElement('div');
             popup.className = 'points-popup';
-            popup.textContent = '⚡ CHEMISTRY FILLED! +5000!';
+            popup.textContent = '⚡ CHEMISTRY FILLED! +' + chemPoints + '!';
             popup.style.fontSize = '20px';
             popup.style.color = '#FFE500';
             const binRect = chemistryTargetBin.getBoundingClientRect();
@@ -2421,6 +2424,7 @@
             chemistryTargetBin = null;
             chemistryFillLevel = 0;
             chemistryFirstTime = true;
+            chemistryFillCount = 0;
             clearChemistryIntervals();
             // Restore any out-of-service bins
             outOfServiceBins.forEach(type => {
