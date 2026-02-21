@@ -2559,41 +2559,45 @@
             stopMusic(); // Stop background music
             playGameOverSound(); // Play game over sound
             document.getElementById('final-score').textContent = score;
-            
-            // Load stats and leaderboard
+
+            // Show game over screen immediately
+            document.getElementById('name-entry').classList.add('hidden');
+            document.getElementById('game-over').classList.remove('hidden');
+
+            // Load stats and leaderboard in background
             try {
                 await loadPlayCount();
                 const scores = await loadLeaderboard();
-                
+
                 // Check if high score
                 if (isHighScore(score, scores)) {
                     document.getElementById('name-entry').classList.remove('hidden');
                     document.getElementById('player-name').value = '';
                     document.getElementById('player-name').focus();
-                    
+
                     // Setup submit handler
                     const submitHandler = async () => {
                         const name = document.getElementById('player-name').value.trim() || 'Anonymous';
                         const errorDiv = document.getElementById('name-error');
-                        
+
                         // Validate name
                         if (name !== 'Anonymous' && !isNameAppropriate(name)) {
                             errorDiv.style.display = 'block';
                             return; // Don't submit
                         }
-                        
+
                         // Hide error and submit
                         errorDiv.style.display = 'none';
                         await submitScore(name, score);
                         document.getElementById('name-entry').classList.add('hidden');
                     };
-                    
+
                     // Remove old listener and add new one
                     const submitBtn = document.getElementById('submit-score');
                     const newSubmitBtn = submitBtn.cloneNode(true);
                     submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
                     newSubmitBtn.addEventListener('click', submitHandler);
-                    
+
                     // Allow Enter key to submit
                     const nameInput = document.getElementById('player-name');
                     const newNameInput = nameInput.cloneNode(true);
@@ -2601,20 +2605,15 @@
                     newNameInput.addEventListener('keypress', (e) => {
                         if (e.key === 'Enter') submitHandler();
                     });
-                    
+
                     // Hide error when user starts typing
                     newNameInput.addEventListener('input', () => {
                         document.getElementById('name-error').style.display = 'none';
                     });
-                } else {
-                    document.getElementById('name-entry').classList.add('hidden');
                 }
             } catch (e) {
                 console.log('Leaderboard error:', e);
-                document.getElementById('name-entry').classList.add('hidden');
             }
-            
-            document.getElementById('game-over').classList.remove('hidden');
         }
 
         // Mobile viewport height fix
