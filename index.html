@@ -1599,6 +1599,15 @@
         let score = 0;
         let lives = 3;
         let combo = 1;
+        let streak = 0;
+        const streakMilestones = {
+            3:  { points: 50,   label: '🔥 3 IN A ROW! +50' },
+            5:  { points: 150,  label: '🔥🔥 5 STREAK! +150' },
+            10: { points: 500,  label: '⚡ 10 STREAK! +500' },
+            20: { points: 1500, label: '💥 20 STREAK! +1500' },
+            30: { points: 3000, label: '🌟 30 STREAK! +3000' },
+            50: { points: 5000, label: '👑 50 STREAK! +5000' }
+        };
         let gameRunning = false;
         let spawnInterval;
         let gameSpeed = 3000;
@@ -1724,7 +1733,7 @@
             document.addEventListener('mouseup', endDrag);
 
             gameArea.appendChild(filmEl);
-            films.push({ element: filmEl, y: 60 });
+            films.push({ element: filmEl, y: 60, spawnTime: Date.now() });
         }
 
         function startDrag(e) {
@@ -1815,32 +1824,65 @@
         }
 
         function correctSort(filmEl, bin) {
-            const points = 10 * combo;
-            score += points;
+            let points = 10 * combo;
             combo = Math.min(combo + 1, 5);
             filmsProcessed++;
-            
+            streak++;
+
+            // Speed bonus: sorted within 1.5 seconds of spawning
+            const filmData = films.find(f => f.element === filmEl);
+            let speedBonus = 0;
+            if (filmData && (Date.now() - filmData.spawnTime) < 1500) {
+                speedBonus = 25;
+                points += speedBonus;
+            }
+
+            score += points;
+
             // Play success sound!
             playSuccessSound();
-            
+
             // Bin celebrates!
             bin.classList.add('happy');
             setTimeout(() => bin.classList.remove('happy'), 500);
-            
+
             // Check for level up
             if (filmsProcessed >= levels[level - 1].films && level < levels.length) {
                 levelUp();
             }
-            
+
             updateUI();
 
+            const gameArea = document.getElementById('game-area');
+            const areaRect = gameArea.getBoundingClientRect();
+            const binLeft = bin.getBoundingClientRect().left - areaRect.left + 40;
+
+            // Points popup
             const popup = document.createElement('div');
             popup.className = 'points-popup';
-            popup.textContent = '+' + points;
-            popup.style.left = bin.getBoundingClientRect().left - document.getElementById('game-area').getBoundingClientRect().left + 40 + 'px';
+            popup.textContent = '+' + points + (speedBonus ? ' ⚡FAST' : '');
+            if (speedBonus) popup.style.color = '#FF6B9D';
+            popup.style.left = binLeft + 'px';
             popup.style.top = '200px';
-            document.getElementById('game-area').appendChild(popup);
+            gameArea.appendChild(popup);
             setTimeout(() => popup.remove(), 1000);
+
+            // Streak milestone bonus
+            if (streakMilestones[streak]) {
+                const milestone = streakMilestones[streak];
+                score += milestone.points;
+                updateUI();
+                const streakPopup = document.createElement('div');
+                streakPopup.className = 'points-popup';
+                streakPopup.textContent = milestone.label;
+                streakPopup.style.fontSize = '22px';
+                streakPopup.style.color = '#00D4AA';
+                streakPopup.style.left = '50%';
+                streakPopup.style.transform = 'translateX(-50%)';
+                streakPopup.style.top = '160px';
+                gameArea.appendChild(streakPopup);
+                setTimeout(() => streakPopup.remove(), 1500);
+            }
 
             filmEl.classList.add('correct');
             setTimeout(() => {
@@ -1854,6 +1896,7 @@
             score += bonusPoints;
             combo = Math.min(combo + 1, 5);
             filmsProcessed++;
+            streak++;
             
             // Play success sound!
             playSuccessSound();
@@ -1892,7 +1935,8 @@
             score += bonusPoints;
             combo = Math.min(combo + 1, 5);
             filmsProcessed++;
-            
+            streak++;
+
             // Play success sound!
             playSuccessSound();
             
@@ -1972,6 +2016,7 @@
         function wrongSort(filmEl, bin) {
             lives--;
             combo = 1;
+            streak = 0;
             updateUI();
             
             // Play error sound!
@@ -2373,6 +2418,7 @@
                     if (film.y > gameHeight - 216) {
                         lives--;
                         combo = 1;
+                        streak = 0;
                         updateUI();
                         
                         // Play error sound!
@@ -2416,6 +2462,7 @@
             score = 0;
             lives = 3;
             combo = 1;
+            streak = 0;
             level = 1;
             filmsProcessed = 0;
             gameRunning = true;
