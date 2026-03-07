@@ -186,6 +186,11 @@
                 <div class="loading">Loading stats...</div>
             </div>
 
+            <div class="stat-card" id="countries-card">
+                <h2>TOP COUNTRIES</h2>
+                <div class="loading">Loading stats...</div>
+            </div>
+
             <div class="stat-card" id="activity-card">
                 <h2>LAST 7 DAYS</h2>
                 <div class="loading">Loading stats...</div>
@@ -326,6 +331,22 @@
                     <h2>LEVEL DISTRIBUTION</h2>
                     <p style="color: #999; font-size: 11px; margin-bottom: 10px;">How far players get</p>
                     ${barChart(levelData)}
+                `;
+
+                // --- TOP COUNTRIES ---
+                const countryCounts = {};
+                sessions.forEach(s => {
+                    const c = s.country || 'unknown';
+                    countryCounts[c] = (countryCounts[c] || 0) + 1;
+                });
+                const countryData = Object.entries(countryCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10)
+                    .map(([label, value]) => ({ label, value }));
+
+                document.getElementById('countries-card').innerHTML = `
+                    <h2>TOP COUNTRIES</h2>
+                    ${barChart(countryData)}
                 `;
 
                 // --- LAST 7 DAYS ---

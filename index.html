@@ -1808,6 +1808,7 @@
         // Session tracking
         let sessionStartTime = null;
         let totalFilmsSorted = 0;
+        let playerCountry = 'unknown';
         function getPlayerId() {
             let id = localStorage.getItem('dubblelab_player_id');
             if (!id) {
@@ -1819,6 +1820,16 @@
         function getDeviceType() {
             return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
         }
+        async function detectCountry() {
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                if (data.country_name) playerCountry = data.country_name;
+            } catch (e) {
+                console.log('Country detection failed:', e);
+            }
+        }
+        detectCountry();
         async function logSession() {
             if (!sessionStartTime) return;
             const duration = Math.round((Date.now() - sessionStartTime) / 1000);
@@ -1831,7 +1842,8 @@
                         duration_seconds: duration,
                         films_sorted: totalFilmsSorted,
                         player_id: getPlayerId(),
-                        device_type: getDeviceType()
+                        device_type: getDeviceType(),
+                        country: playerCountry
                     })
                 });
             } catch (e) {
