@@ -2821,9 +2821,10 @@
 
             playChemistrySpark();
 
-            // Award: +1 life, +2500 points
+            // Award based on level: level 2 = +2500 & +1 life, level 6 = +5000 & +1 life, level 10 = +2500 & +1 life
+            const tokenPoints = level >= 6 ? 5000 : 2500;
             lives = Math.min(lives + 1, 4);
-            score += 2500;
+            score += tokenPoints;
             updateUI();
 
             // Rebuild hearts display — show 4th heart if earned
@@ -2842,7 +2843,7 @@
                 const gameArea = document.getElementById('game-area');
                 const reward = document.createElement('div');
                 reward.className = 'token-reward';
-                reward.innerHTML = '🪙 TOKEN SPIN!<br>+2500 & +1 ❤️';
+                reward.innerHTML = `🪙 TOKEN SPIN!<br>+${tokenPoints} & +1 ❤️`;
                 gameArea.appendChild(reward);
                 setTimeout(() => reward.remove(), 2000);
 
