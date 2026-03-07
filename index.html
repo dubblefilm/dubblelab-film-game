@@ -281,6 +281,8 @@
         }
         .points-popup {
             position: absolute;
+            top: 50%;
+            left: 50%;
             font-size: 24px;
             font-weight: 900;
             color: #00D4AA;
@@ -288,10 +290,12 @@
             pointer-events: none;
             animation: float-up 1s ease-out forwards;
             z-index: 200;
+            text-align: center;
+            white-space: nowrap;
         }
         @keyframes float-up {
-            0% { opacity: 1; transform: translateY(0) scale(1); }
-            100% { opacity: 0; transform: translateY(-50px) scale(1.5); }
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -100%) scale(1.5); }
         }
         #start-screen, #game-over {
             position: absolute;
@@ -2029,9 +2033,6 @@
             popup.className = 'points-popup';
             popup.textContent = '+' + points + (speedBonus ? ' ⚡FAST' : '');
             if (speedBonus) popup.style.color = '#FF6B9D';
-            popup.style.left = '50%';
-            popup.style.transform = 'translateX(-50%)';
-            popup.style.top = '200px';
             gameArea.appendChild(popup);
             setTimeout(() => popup.remove(), 1000);
 
@@ -2045,9 +2046,6 @@
                 streakPopup.textContent = milestone.label;
                 streakPopup.style.fontSize = '22px';
                 streakPopup.style.color = '#00D4AA';
-                streakPopup.style.left = '50%';
-                streakPopup.style.transform = 'translateX(-50%)';
-                streakPopup.style.top = '160px';
                 gameArea.appendChild(streakPopup);
                 setTimeout(() => streakPopup.remove(), 1500);
             }
@@ -2084,9 +2082,6 @@
             const popup = document.createElement('div');
             popup.className = 'points-popup';
             popup.textContent = '🌈 X-PRO BONUS +' + bonusPoints + '!';
-            popup.style.left = '50%';
-            popup.style.transform = 'translateX(-50%)';
-            popup.style.top = '200px';
             popup.style.fontSize = '28px';
             popup.style.color = '#FFE500';
             document.getElementById('game-area').appendChild(popup);
@@ -2124,9 +2119,6 @@
             const popup = document.createElement('div');
             popup.className = 'points-popup';
             popup.textContent = '🎯 TRICK FILM! +' + bonusPoints + '!';
-            popup.style.left = '50%';
-            popup.style.transform = 'translateX(-50%)';
-            popup.style.top = '200px';
             popup.style.fontSize = '24px';
             popup.style.color = '#00FF00';
             popup.style.fontWeight = '900';
@@ -2507,9 +2499,6 @@
             popup.textContent = '⚡ CHEMISTRY FILLED! +' + chemPoints + '!';
             popup.style.fontSize = '20px';
             popup.style.color = '#FFE500';
-            popup.style.left = '50%';
-            popup.style.transform = 'translateX(-50%)';
-            popup.style.top = '200px';
             gameArea.appendChild(popup);
             setTimeout(() => popup.remove(), 1500);
 
@@ -2838,9 +2827,6 @@
             popup.textContent = '😢 TOKEN MISSED!';
             popup.style.fontSize = '22px';
             popup.style.color = '#FF6B9D';
-            popup.style.left = '50%';
-            popup.style.transform = 'translateX(-50%)';
-            popup.style.top = '200px';
             gameArea.appendChild(popup);
             setTimeout(() => popup.remove(), 1500);
 
