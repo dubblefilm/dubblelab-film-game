@@ -2661,7 +2661,7 @@
             // Decay: spin speed decreases fast — must keep swiping!
             tokenDecayInterval = setInterval(() => {
                 if (!tokenActive) return;
-                tokenSpinSpeed = Math.max(0, tokenSpinSpeed - 2.0);
+                tokenSpinSpeed = Math.max(0, tokenSpinSpeed - 0.8);
                 updateTokenSpin();
             }, 100);
 
@@ -2688,7 +2688,7 @@
             // Need a 40px+ right swipe to count as one "flick"
             if (dx > 40 && !tokenSwipeTriggered) {
                 tokenSwipeTriggered = true;
-                tokenSpinSpeed = Math.min(100, tokenSpinSpeed + 5);
+                tokenSpinSpeed = Math.min(100, tokenSpinSpeed + 8);
                 tokenSwipeCount++;
                 playFillBubble();
                 updateTokenSpin();
@@ -2718,7 +2718,7 @@
             const dx = x - tokenSwipeStartX;
             if (dx > 40 && !tokenSwipeTriggered) {
                 tokenSwipeTriggered = true;
-                tokenSpinSpeed = Math.min(100, tokenSpinSpeed + 5);
+                tokenSpinSpeed = Math.min(100, tokenSpinSpeed + 8);
                 tokenSwipeCount++;
                 playFillBubble();
                 updateTokenSpin();
