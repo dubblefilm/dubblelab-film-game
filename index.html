@@ -2017,6 +2017,13 @@
             bin.classList.add('happy');
             setTimeout(() => bin.classList.remove('happy'), 500);
 
+            // Token challenge: trigger 1 film before level ends
+            if (!tokenActive && tokenLevels.includes(level) && filmsProcessed === levels[level - 1].films - 1) {
+                setTimeout(() => {
+                    if (gameRunning && !chemistryActive) startTokenChallenge();
+                }, 500);
+            }
+
             // Check for level up
             if (filmsProcessed >= levels[level - 1].films && level < levels.length) {
                 levelUp();
@@ -2070,12 +2077,19 @@
             // Bin celebrates extra hard!
             bin.classList.add('happy');
             setTimeout(() => bin.classList.remove('happy'), 500);
-            
+
+            // Token challenge: trigger 1 film before level ends
+            if (!tokenActive && tokenLevels.includes(level) && filmsProcessed === levels[level - 1].films - 1) {
+                setTimeout(() => {
+                    if (gameRunning && !chemistryActive) startTokenChallenge();
+                }, 500);
+            }
+
             // Check for level up
             if (filmsProcessed >= levels[level - 1].films && level < levels.length) {
                 levelUp();
             }
-            
+
             updateUI();
 
             // Special X-Pro bonus popup!
@@ -2107,12 +2121,19 @@
             // Bin celebrates extra hard!
             bin.classList.add('happy');
             setTimeout(() => bin.classList.remove('happy'), 500);
-            
+
+            // Token challenge: trigger 1 film before level ends
+            if (!tokenActive && tokenLevels.includes(level) && filmsProcessed === levels[level - 1].films - 1) {
+                setTimeout(() => {
+                    if (gameRunning && !chemistryActive) startTokenChallenge();
+                }, 500);
+            }
+
             // Check for level up
             if (filmsProcessed >= levels[level - 1].films && level < levels.length) {
                 levelUp();
             }
-            
+
             updateUI();
 
             // Special trick film bonus popup!
@@ -2174,12 +2195,6 @@
                 }
             }
 
-            // Trigger token challenge at specific levels
-            if (tokenLevels.includes(level)) {
-                setTimeout(() => {
-                    if (gameRunning && !chemistryActive) startTokenChallenge();
-                }, 2500);
-            }
         }
 
         function wrongSort(filmEl, bin) {
