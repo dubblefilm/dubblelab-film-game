@@ -678,7 +678,11 @@
         }
         .token-timer-display.urgent {
             color: #FF3333;
-            animation: timer-pulse 0.5s infinite;
+            animation: token-timer-pulse 0.5s infinite;
+        }
+        @keyframes token-timer-pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.3); }
         }
         @keyframes token-explode {
             0% { transform: scale(1); opacity: 1; filter: brightness(1); }
