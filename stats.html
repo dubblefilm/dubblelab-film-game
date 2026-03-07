@@ -177,6 +177,14 @@
                 <div class="loading">Loading stats...</div>
             </div>
 
+            <div class="stat-card" id="reset-card">
+                <h2>NEXT LEADERBOARD RESET</h2>
+                <div id="reset-countdown" style="text-align: center; padding: 15px;">
+                    <span style="color: #FFE500; font-size: 28px; font-weight: 900;" id="countdown-timer">--:--:--</span>
+                    <p style="color: #999; font-size: 11px; margin-top: 8px;">Resets every Saturday at 12:00 CET</p>
+                </div>
+            </div>
+
             <div class="stat-card" id="devices-card">
                 <h2>DEVICES</h2>
                 <div class="loading">Loading stats...</div>
@@ -377,6 +385,49 @@
                 });
             }
         }
+
+        function getNextSaturdayNoonCET() {
+            const now = new Date();
+            const utcNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Madrid' }));
+            const day = utcNow.getDay();
+            let daysUntilSat = (6 - day + 7) % 7;
+            if (daysUntilSat === 0) {
+                const hours = utcNow.getHours();
+                const mins = utcNow.getMinutes();
+                if (hours > 12 || (hours === 12 && mins >= 0)) {
+                    daysUntilSat = 7;
+                }
+            }
+            const target = new Date(utcNow);
+            target.setDate(target.getDate() + daysUntilSat);
+            target.setHours(12, 0, 0, 0);
+            // Convert back: get the offset between local and CET
+            const cetStr = now.toLocaleString('en-US', { timeZone: 'Europe/Madrid' });
+            const cetDate = new Date(cetStr);
+            const diff = now.getTime() - cetDate.getTime();
+            return new Date(target.getTime() + diff);
+        }
+
+        function updateCountdown() {
+            const now = new Date();
+            const target = getNextSaturdayNoonCET();
+            const diff = target.getTime() - now.getTime();
+            if (diff <= 0) {
+                document.getElementById('countdown-timer').textContent = 'RESETTING NOW!';
+                return;
+            }
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const secs = Math.floor((diff % (1000 * 60)) / 1000);
+            let text = '';
+            if (days > 0) text += days + 'd ';
+            text += String(hours).padStart(2, '0') + ':' + String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+            document.getElementById('countdown-timer').textContent = text;
+        }
+
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
 
         // Load on page load
         loadAllStats();
