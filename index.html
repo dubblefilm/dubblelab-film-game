@@ -819,6 +819,7 @@
                 <div class="heart"></div>
                 <div class="heart"></div>
                 <div class="heart lost" style="display:none;"></div>
+                <div class="heart lost" style="display:none;"></div>
             </div>
         </div>
         <div id="game-area">
@@ -2821,13 +2822,14 @@
 
             playChemistrySpark();
 
-            // Award based on level: level 2 = +2500 & +1 life, level 6 = +5000 & +1 life, level 10 = +2500 & +1 life
-            const tokenPoints = level >= 6 ? 5000 : 2500;
-            lives = Math.min(lives + 1, 4);
+            // Award based on level: 2 = +2500 & +1 life, 6 = +5000 & +1 life, 10 = +15000 & +2 lives
+            const tokenPoints = level >= 10 ? 15000 : (level >= 6 ? 5000 : 2500);
+            const tokenLives = level >= 10 ? 2 : 1;
+            lives = Math.min(lives + tokenLives, 3 + tokenLives);
             score += tokenPoints;
             updateUI();
 
-            // Rebuild hearts display — show 4th heart if earned
+            // Rebuild hearts display — show extra hearts if earned
             const hearts = document.querySelectorAll('#lives .heart');
             hearts.forEach((heart, i) => {
                 if (i < lives) {
@@ -2843,7 +2845,7 @@
                 const gameArea = document.getElementById('game-area');
                 const reward = document.createElement('div');
                 reward.className = 'token-reward';
-                reward.innerHTML = `🪙 TOKEN SPIN!<br>+${tokenPoints} & +1 ❤️`;
+                reward.innerHTML = `🪙 TOKEN SPIN!<br>+${tokenPoints} & +${tokenLives} ❤️`;
                 gameArea.appendChild(reward);
                 setTimeout(() => reward.remove(), 2000);
 
