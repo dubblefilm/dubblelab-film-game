@@ -2,6 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TM8VBBKVEH"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-TM8VBBKVEH');
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -1796,6 +1804,40 @@
         let spawnInterval;
         let gameSpeed = 3000;
         let fallSpeed = 1.0;
+
+        // Session tracking
+        let sessionStartTime = null;
+        let totalFilmsSorted = 0;
+        function getPlayerId() {
+            let id = localStorage.getItem('dubblelab_player_id');
+            if (!id) {
+                id = 'p_' + Math.random().toString(36).substr(2, 12) + Date.now().toString(36);
+                localStorage.setItem('dubblelab_player_id', id);
+            }
+            return id;
+        }
+        function getDeviceType() {
+            return /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+        }
+        async function logSession() {
+            if (!sessionStartTime) return;
+            const duration = Math.round((Date.now() - sessionStartTime) / 1000);
+            try {
+                await supabaseQuery('sessions', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        score: score,
+                        level_reached: level,
+                        duration_seconds: duration,
+                        films_sorted: totalFilmsSorted,
+                        player_id: getPlayerId(),
+                        device_type: getDeviceType()
+                    })
+                });
+            } catch (e) {
+                console.log('Session log failed:', e);
+            }
+        }
         let level = 1;
         let filmsProcessed = 0;
         let spawnSpeed = 3000;
@@ -2025,6 +2067,7 @@
             let points = 10 * combo;
             combo = Math.min(combo + 1, 5);
             filmsProcessed++;
+            totalFilmsSorted++;
             streak++;
 
             // Speed bonus: sorted within 1.5 seconds of spawning
@@ -2107,6 +2150,7 @@
             score += bonusPoints;
             combo = Math.min(combo + 1, 5);
             filmsProcessed++;
+            totalFilmsSorted++;
             streak++;
             
             // Play success sound!
@@ -2161,6 +2205,7 @@
             score += bonusPoints;
             combo = Math.min(combo + 1, 5);
             filmsProcessed++;
+            totalFilmsSorted++;
             streak++;
 
             // Play success sound!
@@ -2971,6 +3016,8 @@
             streak = 0;
             level = 1;
             filmsProcessed = 0;
+            totalFilmsSorted = 0;
+            sessionStartTime = Date.now();
             gameRunning = true;
             fallSpeed = levels[0].speed;
             spawnSpeed = levels[0].spawn;
@@ -3058,6 +3105,9 @@
         async function endGame() {
             gameRunning = false;
             clearInterval(spawnInterval);
+
+            // Log session to Supabase (non-blocking)
+            logSession().catch(e => console.log('Session log failed:', e));
 
             // Clean up chemistry challenge if active
             chemistryActive = false;
