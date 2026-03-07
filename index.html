@@ -2024,7 +2024,8 @@
             popup.className = 'points-popup';
             popup.textContent = '+' + points + (speedBonus ? ' ⚡FAST' : '');
             if (speedBonus) popup.style.color = '#FF6B9D';
-            popup.style.left = binLeft + 'px';
+            popup.style.left = '50%';
+            popup.style.transform = 'translateX(-50%)';
             popup.style.top = '200px';
             gameArea.appendChild(popup);
             setTimeout(() => popup.remove(), 1000);
@@ -2078,7 +2079,8 @@
             const popup = document.createElement('div');
             popup.className = 'points-popup';
             popup.textContent = '🌈 X-PRO BONUS +' + bonusPoints + '!';
-            popup.style.left = bin.getBoundingClientRect().left - document.getElementById('game-area').getBoundingClientRect().left + 40 + 'px';
+            popup.style.left = '50%';
+            popup.style.transform = 'translateX(-50%)';
             popup.style.top = '200px';
             popup.style.fontSize = '28px';
             popup.style.color = '#FFE500';
@@ -2117,7 +2119,8 @@
             const popup = document.createElement('div');
             popup.className = 'points-popup';
             popup.textContent = '🎯 TRICK FILM! +' + bonusPoints + '!';
-            popup.style.left = bin.getBoundingClientRect().left - document.getElementById('game-area').getBoundingClientRect().left + 40 + 'px';
+            popup.style.left = '50%';
+            popup.style.transform = 'translateX(-50%)';
             popup.style.top = '200px';
             popup.style.fontSize = '24px';
             popup.style.color = '#00FF00';
@@ -2499,9 +2502,8 @@
             popup.textContent = '⚡ CHEMISTRY FILLED! +' + chemPoints + '!';
             popup.style.fontSize = '20px';
             popup.style.color = '#FFE500';
-            const binRect = chemistryTargetBin.getBoundingClientRect();
-            const areaRect = gameArea.getBoundingClientRect();
-            popup.style.left = (binRect.left - areaRect.left + 10) + 'px';
+            popup.style.left = '50%';
+            popup.style.transform = 'translateX(-50%)';
             popup.style.top = '200px';
             gameArea.appendChild(popup);
             setTimeout(() => popup.remove(), 1500);
