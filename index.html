@@ -946,7 +946,8 @@
                     Loading stats...
                 </div>
                 <div id="leaderboard" style="margin: 20px auto; max-width: 400px; background: rgba(0,0,0,0.5); border-radius: 15px; padding: 20px;">
-                    <h2 style="color: #FFE500; font-size: 24px; margin-bottom: 15px;">🏆 TOP 10 SCORES</h2>
+                    <h2 style="color: #FFE500; font-size: 24px; margin-bottom: 5px;">🏆 TOP 10 SCORES</h2>
+                    <p style="color: #999; font-size: 11px; margin-bottom: 15px;">Resets every Saturday at 12:00 CET</p>
                     <div id="leaderboard-list" style="color: #fff; font-size: 14px; text-align: left; max-height: 280px; overflow-y: auto;">
                         Loading leaderboard...
                     </div>
@@ -1652,9 +1653,34 @@
             }
         }
 
+        function getLastSaturdayNoonCET() {
+            // Get current time in CET (UTC+1) / CEST (UTC+2)
+            const now = new Date();
+            const cetOffset = 1; // CET is UTC+1
+            const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+            const cetNow = new Date(utcMs + cetOffset * 3600000);
+
+            // Find the most recent Saturday at 12:00 CET
+            const day = cetNow.getDay(); // 0=Sun, 6=Sat
+            const daysSinceSat = day === 6 ? 0 : day + 1; // days since last Saturday
+            const lastSat = new Date(cetNow);
+            lastSat.setDate(lastSat.getDate() - daysSinceSat);
+            lastSat.setHours(12, 0, 0, 0);
+
+            // If it's Saturday but before noon CET, go back to previous Saturday
+            if (day === 6 && cetNow.getHours() < 12) {
+                lastSat.setDate(lastSat.getDate() - 7);
+            }
+
+            // Convert back to UTC for the query
+            const utcLastSat = new Date(lastSat.getTime() - cetOffset * 3600000);
+            return utcLastSat.toISOString();
+        }
+
         async function loadLeaderboard() {
             try {
-                const result = await supabaseQuery('leaderboard?order=score.desc&limit=10');
+                const since = getLastSaturdayNoonCET();
+                const result = await supabaseQuery(`leaderboard?order=score.desc&limit=10&created_at=gte.${since}`);
                 const scores = result.map(entry => ({
                     name: entry.player_name,
                     score: entry.score,
