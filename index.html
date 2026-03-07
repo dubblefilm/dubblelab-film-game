@@ -2017,6 +2017,16 @@
             bin.classList.add('happy');
             setTimeout(() => bin.classList.remove('happy'), 500);
 
+            // Chemistry challenge: trigger after 4 films in a chemistry level
+            if (!chemistryActive && chemistryLevels.includes(level) && filmsProcessed === 4) {
+                const availableTypes = ['C41', 'BW', 'E6ECN'].filter(t => !outOfServiceBins.includes(t));
+                if (availableTypes.length > 0) {
+                    setTimeout(() => {
+                        if (gameRunning && !tokenActive) startChemistryChallenge();
+                    }, 500);
+                }
+            }
+
             // Token challenge: trigger 1 film before level ends
             if (!tokenActive && tokenLevels.includes(level) && filmsProcessed === levels[level - 1].films - 1) {
                 setTimeout(() => {
@@ -2079,6 +2089,16 @@
             bin.classList.add('happy');
             setTimeout(() => bin.classList.remove('happy'), 500);
 
+            // Chemistry challenge: trigger after 4 films in a chemistry level
+            if (!chemistryActive && chemistryLevels.includes(level) && filmsProcessed === 4) {
+                const availableTypes = ['C41', 'BW', 'E6ECN'].filter(t => !outOfServiceBins.includes(t));
+                if (availableTypes.length > 0) {
+                    setTimeout(() => {
+                        if (gameRunning && !tokenActive) startChemistryChallenge();
+                    }, 500);
+                }
+            }
+
             // Token challenge: trigger 1 film before level ends
             if (!tokenActive && tokenLevels.includes(level) && filmsProcessed === levels[level - 1].films - 1) {
                 setTimeout(() => {
@@ -2122,6 +2142,16 @@
             // Bin celebrates extra hard!
             bin.classList.add('happy');
             setTimeout(() => bin.classList.remove('happy'), 500);
+
+            // Chemistry challenge: trigger after 4 films in a chemistry level
+            if (!chemistryActive && chemistryLevels.includes(level) && filmsProcessed === 4) {
+                const availableTypes = ['C41', 'BW', 'E6ECN'].filter(t => !outOfServiceBins.includes(t));
+                if (availableTypes.length > 0) {
+                    setTimeout(() => {
+                        if (gameRunning && !tokenActive) startChemistryChallenge();
+                    }, 500);
+                }
+            }
 
             // Token challenge: trigger 1 film before level ends
             if (!tokenActive && tokenLevels.includes(level) && filmsProcessed === levels[level - 1].films - 1) {
@@ -2186,15 +2216,7 @@
             document.getElementById('game-area').appendChild(explosion);
             setTimeout(() => explosion.remove(), 2000);
 
-            // Trigger chemistry challenge at specific levels
-            if (chemistryLevels.includes(level)) {
-                const availableTypes = ['C41', 'BW', 'E6ECN'].filter(t => !outOfServiceBins.includes(t));
-                if (availableTypes.length > 0) {
-                    setTimeout(() => {
-                        if (gameRunning) startChemistryChallenge();
-                    }, 2500);
-                }
-            }
+            // Chemistry challenge now triggers after 4 films in the level (see sort functions)
 
         }
 
