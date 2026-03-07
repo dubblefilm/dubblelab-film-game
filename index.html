@@ -2255,8 +2255,8 @@
 
             filmEl.classList.add('wrong');
             setTimeout(() => {
-                filmEl.classList.remove('wrong');
-                filmEl.style.zIndex = 100;
+                filmEl.remove();
+                films = films.filter(f => f.element !== filmEl);
             }, 300);
 
             if (lives <= 0) {
